@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+}
+
+group = 'it.unimi.di.abd'
+version = '0.0.1-SNAPSHOT'
+// define which language version of Java your source files should be treated as
+sourceCompatibility = 15
+// defines the minimum JVM version your code should run on, i.e. it determines
+// the version of byte code the compiler generates
+targetCompatibility = 11
+
+repositories {
+    // Use jcenter for resolving dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
+}
+
+dependencies {
+    // This dependency is exported to consumers, that is to say found on their compile classpath.
+    // api 'org.apache.commons:commons-math3:3.6.1'
+
+    // This dependency is used internally, and not exposed to consumers on their own compile classpath.
+    // implementation 'com.google.guava:guava:28.1-jre'
+
+    // Use JUnit Jupiter API for testing.
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.5.2'
+
+    // Use JUnit Jupiter Engine for testing.
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.5.2'
+}
+
+test {
+    // Use junit platform for unit tests
+    useJUnitPlatform()
+}
