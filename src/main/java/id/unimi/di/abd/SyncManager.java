@@ -6,6 +6,16 @@ import java.io.File;
 import java.util.concurrent.Flow;
 
 public class SyncManager<SourceRecord>  extends Thread implements Flow.Subscriber<SourceRecord> {
+    private final HashDispatcher hashDispatcher;
+    private final File syncFile;
+    private final TargetAdapter targetAdapter;
+
+    private SyncManager(HashDispatcher hashDispatcher, File syncFile, TargetAdapter targetAdapter) {
+        this.hashDispatcher = hashDispatcher;
+        this.syncFile = syncFile;
+        this.targetAdapter = targetAdapter;
+    }
+
     @Override
     public void onSubscribe(Flow.Subscription subscription) {
 
@@ -27,20 +37,29 @@ public class SyncManager<SourceRecord>  extends Thread implements Flow.Subscribe
     }
 
     public static class Builder {
+
+        private HashDispatcher hashDispatcher;
+        private File syncFile;
+        private TargetAdapter targetAdapter;
+
         public Builder setHashDispatcher(HashDispatcher hashDispatcher) {
-            return null;
+            this.hashDispatcher = hashDispatcher;
+            return this;
         }
 
         public Builder setSyncJsonDir(File dir) {
-            return null;
+            String fileName = String.format("sync%d.json",this.hashDispatcher.getPartition());
+            this.syncFile = new File(dir,fileName);
+            return this;
         }
 
         public Builder setTargetAdapter(TargetAdapter targetAdapter) {
-            return  null;
+            this.targetAdapter = targetAdapter;
+            return this;
         }
 
         public SyncManager build() {
-            return  null;
+            return new SyncManager(hashDispatcher, syncFile, targetAdapter);
         }
     }
 }
