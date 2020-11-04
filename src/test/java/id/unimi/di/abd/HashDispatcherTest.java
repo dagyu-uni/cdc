@@ -18,8 +18,9 @@ public class HashDispatcherTest {
         "4,false"
     })
     public void simpleTest(long partition, boolean expected){
-        int bit = 8;
+        int bit = 4;
         HashDispatcher hashDispatcher = new HashDispatcher(bit,partition);
+        //00001000
         byte[] hash = {0x0, 0x8};
         assertThat(hashDispatcher.isValid(hash)).isEqualTo(expected);
     }
@@ -33,8 +34,9 @@ public class HashDispatcherTest {
             "4,false"
     })
     public void moreComplexTest(long partition, boolean expected){
-        int bit = 9;
+        int bit = 5;
         HashDispatcher hashDispatcher = new HashDispatcher(bit,partition);
+        //00001000
         byte[] hash = {0x0, 0x8};
         assertThat(hashDispatcher.isValid(hash)).isEqualTo(expected);
     }

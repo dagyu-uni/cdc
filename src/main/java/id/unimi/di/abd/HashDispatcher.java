@@ -9,7 +9,7 @@ public class HashDispatcher {
     }
 
     public static Stream<HashDispatcher> generate(int bit) {
-        return IntStream.range(0, ((int) Math.pow(2,bit)) - 1).mapToObj(e -> new HashDispatcher(bit,e));
+        return IntStream.range(0, (int) Math.pow(2,bit)).mapToObj(e -> new HashDispatcher(bit,e));
     }
 
     public boolean isValid(byte[] hash) {
