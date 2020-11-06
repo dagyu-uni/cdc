@@ -25,4 +25,5 @@ public class SourceRecordTest {
         softAssertions.assertThat(sourceRecord.getHash()).isEqualTo(hash);
         softAssertions.assertAll();
     }
+
 }

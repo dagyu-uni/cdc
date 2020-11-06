@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -41,16 +43,20 @@ public class SyncManagerTest {
     @BeforeEach
     public void setUp() throws IOException {
         stringWriter = new StringWriter();
+
         when(targetAdapter.getWriter()).thenReturn(stringWriter);
         when(hashDispatcher.isValid(any())).thenReturn(true);
         when(hashDispatcher.getPartition()).thenReturn((long) 1);
     }
 
-    @Test
-    public void loadSyncFileTest() throws IOException {
-        createSyncJson("data01/before.csv");
-        Stream<SourceRecord> recordStream = createSourceStream("data01/after.csv");
-        String expected = getExpectedString("data01/change.json");
+    @ParameterizedTest
+    @CsvSource({
+        "data01",
+    })
+    public void syncFlowTest(String path) throws IOException {
+        createSyncJson(String.format("%s/before.csv", path));
+        Stream<SourceRecord> recordStream = createSourceStream(String.format("%s/after.csv", path));
+        String expected = getExpectedString(String.format("%s/change.log", path));
 
         SyncManager syncManager = new SyncManager.Builder()
                 .setHashDispatcher(hashDispatcher)
@@ -61,24 +67,25 @@ public class SyncManagerTest {
         publishRecords(recordStream, syncManager);
         assertThat(expected).isEqualTo(stringWriter.toString());
 
-
     }
 
     private void publishRecords(Stream<SourceRecord> recordStream, SyncManager syncManager) {
         SubmissionPublisher<SourceRecord> publisher = new SubmissionPublisher<>();
+        publisher.subscribe(syncManager);
         recordStream.forEach(publisher::submit);
         try {
             syncManager.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        publisher.close();
     }
 
     private String getExpectedString(String fileName) {
         StringBuilder stringBuilder = new StringBuilder();
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
-        BufferedReader streamReader =  new BufferedReader(new InputStreamReader(is));
-        streamReader.lines().forEach(stringBuilder::append);
+        BufferedReader streamReader = new BufferedReader(new InputStreamReader(is));
+        streamReader.lines().forEach(e -> stringBuilder.append(e + "\n"));
         return stringBuilder.toString();
     }
 

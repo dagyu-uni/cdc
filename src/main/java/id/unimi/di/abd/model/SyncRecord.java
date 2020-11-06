@@ -16,4 +16,9 @@ public class SyncRecord {
         Arrays.stream(records).forEach(e -> dict.put(e.khash, e.hash));
         return dict;
     }
+
+    @Override
+    public String toString() {
+        return khash + ":" + hash;
+    }
 }
