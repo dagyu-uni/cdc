@@ -1,5 +1,7 @@
 package id.unimi.di.abd.adapter;
 
+import id.unimi.di.abd.model.SourceRecord;
+
 import java.io.*;
 
 public abstract class TargetAdapter {
@@ -32,7 +34,19 @@ public abstract class TargetAdapter {
         getWriter().close();
     }
 
+    public void writeLogDelete(String k, String v) throws IOException {
+        getWriter().write(logDelete(k, v));
+    }
+    public void writeLogInsert(SourceRecord item) throws IOException {
+        getWriter().write(logInsert(item));
+    }
+    public void writeLogUpdate(SourceRecord item) throws IOException {
+        getWriter().write(this.logUpdate(item));
+    }
+
     protected abstract File createFile(String name);
     protected abstract File renameFile(String oldName, String newName);
-
+    protected abstract String logUpdate(SourceRecord item);
+    protected abstract String logInsert(SourceRecord item);
+    protected abstract String logDelete(String k, String v);
 }

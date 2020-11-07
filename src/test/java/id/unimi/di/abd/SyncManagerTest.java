@@ -7,7 +7,6 @@ import id.unimi.di.abd.model.SourceRecord;
 import id.unimi.di.abd.model.SyncRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,6 +18,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
@@ -26,11 +26,14 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Tag("UnitTest")
 public class SyncManagerTest {
+    public static final String DELETE = "DELETE";
+    public static final String INSERT = "INSERT";
+    public static final String UPDATE = "UPDATE";
     @TempDir
     File dir;
     @Mock
@@ -44,7 +47,6 @@ public class SyncManagerTest {
     public void setUp() throws IOException {
         stringWriter = new StringWriter();
 
-        when(targetAdapter.getWriter()).thenReturn(stringWriter);
         when(hashDispatcher.isValid(any())).thenReturn(true);
         when(hashDispatcher.getPartition()).thenReturn((long) 1);
     }
@@ -52,11 +54,14 @@ public class SyncManagerTest {
     @ParameterizedTest
     @CsvSource({
         "data01",
+        "data02",
+        "data03",
+        "data04"
     })
-    public void syncFlowTest(String path) throws IOException {
+    public void syncFlowTest(String path) throws IOException, InterruptedException {
         createSyncJson(String.format("%s/before.csv", path));
         Stream<SourceRecord> recordStream = createSourceStream(String.format("%s/after.csv", path));
-        String expected = getExpectedString(String.format("%s/change.log", path));
+        HashMap<String, Integer> map = getExpectedMap(String.format("%s/change.csv", path));
 
         SyncManager syncManager = new SyncManager.Builder()
                 .setHashDispatcher(hashDispatcher)
@@ -65,7 +70,10 @@ public class SyncManagerTest {
                 .build();
 
         publishRecords(recordStream, syncManager);
-        assertThat(expected).isEqualTo(stringWriter.toString());
+        Thread.sleep(1000);
+        verify(targetAdapter, times(map.get(DELETE))).writeLogDelete(any(), any());
+        verify(targetAdapter, times(map.get(INSERT))).writeLogInsert(any());
+        verify(targetAdapter, times(map.get(UPDATE))).writeLogUpdate(any());
 
     }
 
@@ -73,20 +81,25 @@ public class SyncManagerTest {
         SubmissionPublisher<SourceRecord> publisher = new SubmissionPublisher<>();
         publisher.subscribe(syncManager);
         recordStream.forEach(publisher::submit);
-        try {
-            syncManager.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
         publisher.close();
     }
 
-    private String getExpectedString(String fileName) {
-        StringBuilder stringBuilder = new StringBuilder();
+    private HashMap<String, Integer> getExpectedMap(String fileName) {
+        HashMap<String, Integer> map = new HashMap<>();
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
         BufferedReader streamReader = new BufferedReader(new InputStreamReader(is));
-        streamReader.lines().forEach(e -> stringBuilder.append(e + "\n"));
-        return stringBuilder.toString();
+        streamReader
+                .lines()
+                .map(e -> e.split(","))
+                .forEach(e -> map.put(e[0], Integer.parseInt(e[1])))
+
+        ;
+
+        map.putIfAbsent(DELETE, 0);
+        map.putIfAbsent(INSERT, 0);
+        map.putIfAbsent(UPDATE, 0);
+
+        return map;
     }
 
     private Stream<SourceRecord> createSourceStream(String fileName) throws IOException {

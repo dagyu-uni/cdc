@@ -25,7 +25,6 @@ public class CDC extends Thread{
     public void run() {
         SubmissionPublisher<SourceRecord> publisher = new SubmissionPublisher<>();
         List<HashDispatcher> list = HashDispatcher.generate(4).collect(Collectors.toList());
-        ExecutorService executorService = Executors.newFixedThreadPool(list.size() + 1);
         list.forEach(e -> {
              SyncManager syncManager = new SyncManager.Builder()
                      .setSyncJsonDir(new File("./"))
@@ -33,14 +32,7 @@ public class CDC extends Thread{
                      .setTargetAdapter(targetAdapter)
                      .build();
              publisher.subscribe(syncManager);
-             executorService.execute(syncManager);
         });
-        executorService.execute(() -> sourceAdapter.stream().forEach(publisher::submit));
-        executorService.shutdown();
-        try {
-            executorService.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        sourceAdapter.stream().forEach(publisher::submit);
     }
 }

@@ -10,13 +10,12 @@ import java.util.HashMap;
 import java.util.concurrent.Flow;
 
 enum SQLop {
-    DELETE,
     UPDATE,
     INSERT,
     NOP
 }
 
-public class SyncManager extends Thread implements Flow.Subscriber<SourceRecord> {
+public class SyncManager implements Flow.Subscriber<SourceRecord> {
     private final HashDispatcher hashDispatcher;
     private final File syncFile;
     private final TargetAdapter targetAdapter;
@@ -52,10 +51,10 @@ public class SyncManager extends Thread implements Flow.Subscriber<SourceRecord>
             if(hashDispatcher.isValid(item.getKHash())) {
                 switch(compareSQLop(syncRecords, item)) {
                     case UPDATE:
-                        this.targetAdapter.getWriter().write(logSQLop(SQLop.UPDATE) + item.toString() + "\n");
+                        targetAdapter.writeLogUpdate(item);
                         break;
                     case INSERT:
-                        this.targetAdapter.getWriter().write(logSQLop(SQLop.INSERT) + item.toString() + "\n");
+                        targetAdapter.writeLogInsert(item);
                         break;
                     case NOP:
                         break;
@@ -75,11 +74,11 @@ public class SyncManager extends Thread implements Flow.Subscriber<SourceRecord>
 
     @Override
     public void onComplete() {
-        this.syncRecords.forEach((e, v) -> {
+        this.syncRecords.forEach((k, v) -> {
             try {
-                this.targetAdapter.getWriter().write(logSQLop(SQLop.DELETE) + "\n");
-            } catch (IOException ioException) {
-                ioException.printStackTrace();
+                this.targetAdapter.writeLogDelete(k, v);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         });
     }
@@ -100,18 +99,6 @@ public class SyncManager extends Thread implements Flow.Subscriber<SourceRecord>
             e.printStackTrace();
         }
         return SQLop.NOP;
-    }
-
-    private String logSQLop(SQLop op) {
-        switch(op) {
-            case DELETE:
-                return "DELETE";
-            case UPDATE:
-                return "UPDATE -> ";
-            case INSERT:
-                return "INSERT -> ";
-        }
-        return null;
     }
 
     public static class Builder {
