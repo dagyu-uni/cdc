@@ -1,11 +1,41 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
-group = 'it.unimi.di.abd'
+group = 'com.dagyu'
 version = '0.0.1-SNAPSHOT'
 // define which language version of Java your source files should be treated as
 sourceCompatibility = 13
+
+def artifactId = 'cdc'
+def usernameGithubPackages = project.findProperty("grp.user") ?: System.getenv("GITHUB_USERNAME")
+def passwordGithubPackages = project.findProperty("grp.key") ?: System.getenv("GITHUB_TOKEN")
+
+
+publishing {
+    repositories {
+        maven {
+            name = "GithubPackages"
+            url = uri("https://maven.pkg.github.com/dagyu/vec_extensions")
+            credentials {
+                username = usernameGithubPackages
+                password = passwordGithubPackages
+            }
+        }
+    }
+
+    publications {
+        gpr(MavenPublication) {
+            groupId = group
+            artifactId = artifactId
+            version = version
+            from(components.java)
+        }
+    }
+}
+
+
 
 repositories {
     // Use jcenter for resolving dependencies.

@@ -28,6 +28,7 @@ public abstract class TargetAdapter {
     }
 
     public void finish() throws IOException {
+        getWriter().flush();
         String oldName = file.getName();
         String newName = oldName.replaceFirst(String.format("%s$",ext),"");
         renameFile(oldName, newName);
