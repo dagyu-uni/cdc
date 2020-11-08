@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.dagyu'
-version = '0.0.2-SNAPSHOT'
+version = '0.0.3-SNAPSHOT'
 // define which language version of Java your source files should be treated as
 sourceCompatibility = 13
 
