@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.dagyu'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 // define which language version of Java your source files should be treated as
 sourceCompatibility = 13
 
@@ -17,7 +17,7 @@ publishing {
     repositories {
         maven {
             name = "GithubPackages"
-            url = uri("https://maven.pkg.github.com/dagyu/vec_extensions")
+            url = uri("https://maven.pkg.github.com/dagyu/cdc")
             credentials {
                 username = usernameGithubPackages
                 password = passwordGithubPackages

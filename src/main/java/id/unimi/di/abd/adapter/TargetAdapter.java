@@ -10,7 +10,7 @@ public abstract class TargetAdapter {
     private File file;
     private FileWriter fileWriter;
 
-    private TargetAdapter(String name, String ext){
+    protected TargetAdapter(String name, String ext){
         this.ext = ext;
         this.file = createFile(
             TargetAdapter.appendExt(name,ext)
