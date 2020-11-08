@@ -2,7 +2,6 @@ package id.unimi.di.abd;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import id.unimi.di.abd.adapter.TargetAdapter;
 import id.unimi.di.abd.model.SourceRecord;
 import id.unimi.di.abd.model.SyncRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,11 +19,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -37,18 +34,13 @@ public class SyncManagerTest {
     @TempDir
     File dir;
     @Mock
-    TargetAdapter targetAdapter;
-    @Mock
-    HashDispatcher hashDispatcher;
+    MoveAndRenamePattern moveAndRenamePattern;
     StringWriter stringWriter;
 
 
     @BeforeEach
-    public void setUp() throws IOException {
+    public void setUp()  {
         stringWriter = new StringWriter();
-
-        when(hashDispatcher.isValid(any())).thenReturn(true);
-        when(hashDispatcher.getPartition()).thenReturn((long) 1);
     }
 
     @ParameterizedTest
@@ -58,31 +50,30 @@ public class SyncManagerTest {
         "data03",
         "data04"
     })
-    public void syncFlowTest(String path) throws IOException, InterruptedException {
-        createSyncJson(String.format("%s/before.csv", path));
+    public void syncFlowTest(String path) throws IOException {
+        long partition = 1;
+        createSyncJson(String.format("%s/before.csv", path),partition);
         Stream<SourceRecord> recordStream = createSourceStream(String.format("%s/after.csv", path));
         HashMap<String, Integer> map = getExpectedMap(String.format("%s/change.csv", path));
 
         SyncManager syncManager = new SyncManager.Builder()
-                .setHashDispatcher(hashDispatcher)
+                .setPartition(partition)
                 .setSyncJsonDir(dir)
-                .setTargetAdapter(targetAdapter)
+                .setMoveAndRenamePattern(moveAndRenamePattern)
                 .build();
 
-        publishRecords(recordStream, syncManager);
-        Thread.sleep(1000);
-        verify(targetAdapter, times(map.get(DELETE))).writeLogDelete(any(), any());
-        verify(targetAdapter, times(map.get(INSERT))).writeLogInsert(any());
-        verify(targetAdapter, times(map.get(UPDATE))).writeLogUpdate(any());
+        recordStream.forEach(syncManager::submit);
+        syncManager.finish();
+
+        verify(moveAndRenamePattern, times(map.get(INSERT)))
+                .write(any(),eq(SQLop.INSERT));
+        verify(moveAndRenamePattern, times(map.get(UPDATE)))
+                .write(any(),eq(SQLop.UPDATE));
+        verify(moveAndRenamePattern, times(map.get(DELETE)))
+                .write(any(), any() ,eq(SQLop.DELETE));
 
     }
 
-    private void publishRecords(Stream<SourceRecord> recordStream, SyncManager syncManager) {
-        SubmissionPublisher<SourceRecord> publisher = new SubmissionPublisher<>();
-        publisher.subscribe(syncManager);
-        recordStream.forEach(publisher::submit);
-        publisher.close();
-    }
 
     private HashMap<String, Integer> getExpectedMap(String fileName) {
         HashMap<String, Integer> map = new HashMap<>();
@@ -102,7 +93,7 @@ public class SyncManagerTest {
         return map;
     }
 
-    private Stream<SourceRecord> createSourceStream(String fileName) throws IOException {
+    private Stream<SourceRecord> createSourceStream(String fileName) {
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
         BufferedReader streamReader =  new BufferedReader(new InputStreamReader(is));
         return streamReader
@@ -111,7 +102,7 @@ public class SyncManagerTest {
                 .map(e -> new SourceRecord(e[0],e[1]));
     }
 
-    private void createSyncJson(String fileName) throws IOException {
+    private void createSyncJson(String fileName, long partition) throws IOException {
         InputStream is = getClass().getClassLoader().getResourceAsStream(fileName);
         BufferedReader streamReader =  new BufferedReader(new InputStreamReader(is));
         List<SyncRecord> syncRecordList = streamReader
@@ -123,9 +114,8 @@ public class SyncManagerTest {
                     record.hash = hash(e[1]);
                     return record;
                 }).collect(Collectors.toList());
-        long partition = hashDispatcher.getPartition();
         Gson gson = new GsonBuilder().create();
-        FileWriter writer = new FileWriter(new File(dir, String.format("sync%d.json", partition)));
+        FileWriter writer = new FileWriter(new File(dir, String.format("sync%d.json",partition)));
         gson.toJson(syncRecordList, writer);
         writer.flush();
         writer.close();
@@ -144,9 +134,9 @@ public class SyncManagerTest {
 
     private String bytesToHex(byte[] hash){
         StringBuilder hexString = new StringBuilder(2 * hash.length);
-        for (int i = 0; i < hash.length; i++) {
-            String hex = Integer.toHexString(0xff & hash[i]);
-            if(hex.length() == 1) hexString.append("0");
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append("0");
             hexString.append(hex);
         }
         return hexString.toString();

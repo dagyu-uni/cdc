@@ -1,5 +1,6 @@
 package id.unimi.di.abd.model;
 
+import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,21 +14,31 @@ public class SourceRecord {
         this.value = value;
     }
 
-    public byte[] getKHash() throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA256");
+    public byte[] getKHash() {
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
         return digest.digest(key.getBytes(StandardCharsets.UTF_8));
     }
 
-    public byte[] getHash() throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA256");
+    public byte[] getHash() {
+        MessageDigest digest = null;
+        try {
+            digest = MessageDigest.getInstance("SHA256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
         return digest.digest(value.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String getKHashStringed() throws NoSuchAlgorithmException {
+    public String getKHashStringed() {
         return bytesToHex(getKHash());
     }
 
-    public String getHashStringed() throws NoSuchAlgorithmException {
+    public String getHashStringed() {
         return bytesToHex(getHash());
     }
 
@@ -44,5 +55,12 @@ public class SourceRecord {
     @Override
     public String toString() {
         return key + ":" + value;
+    }
+
+    public SyncRecord toSyncRecord() {
+        SyncRecord syncRecord = new SyncRecord();
+        syncRecord.khash = getKHashStringed();
+        syncRecord.hash = getHashStringed();
+        return syncRecord;
     }
 }

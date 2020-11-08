@@ -2,37 +2,55 @@ package id.unimi.di.abd;
 
 import id.unimi.di.abd.adapter.SourceAdapter;
 import id.unimi.di.abd.adapter.TargetAdapter;
-import id.unimi.di.abd.model.SourceRecord;
 
 import java.io.File;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SubmissionPublisher;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.io.IOException;
+import java.util.HashMap;
 
-public class CDC extends Thread{
+public class CDC {
+    public static final int BIT = 4;
+    public static final String EXT = ".tmp";
     private final SourceAdapter sourceAdapter;
     private final TargetAdapter targetAdapter;
+    private final File dir;
+    private HashMap<Long, SyncManager> dispatcherMap;
 
-    public CDC(SourceAdapter sourceAdapter, TargetAdapter targetAdapter){
+    public CDC(SourceAdapter sourceAdapter, TargetAdapter targetAdapter, File dir){
         this.sourceAdapter = sourceAdapter;
         this.targetAdapter = targetAdapter;
+        this.dir = dir;
+        this.dir.mkdir();
+
     }
 
-    @Override
     public void run() {
-        SubmissionPublisher<SourceRecord> publisher = new SubmissionPublisher<>();
-        List<HashDispatcher> list = HashDispatcher.generate(4).collect(Collectors.toList());
-        list.forEach(e -> {
-             SyncManager syncManager = new SyncManager.Builder()
-                     .setSyncJsonDir(new File("./"))
-                     .setHashDispatcher(e)
-                     .setTargetAdapter(targetAdapter)
-                     .build();
-             publisher.subscribe(syncManager);
+
+        MoveAndRenamePattern.clear(targetAdapter,EXT);
+
+        HashDispatcher dispatcher = createDispatcherMap();
+
+        sourceAdapter.stream().parallel().forEach(e -> {
+            long dispatchedPartition = dispatcher.getPartition(e.getKHash());
+            SyncManager syncManager = dispatcherMap.get(dispatchedPartition);
+            syncManager.submit(e);
         });
-        sourceAdapter.stream().forEach(publisher::submit);
+
+        dispatcherMap.values().parallelStream().forEach(SyncManager::finish);
+    }
+
+    private HashDispatcher createDispatcherMap() {
+        this.dispatcherMap = new HashMap<>();
+
+        HashDispatcher.generate(BIT).forEach(e -> {
+            MoveAndRenamePattern moveAndRenamePattern =
+                    new MoveAndRenamePattern(targetAdapter, String.format("%d_%d", System.currentTimeMillis(),e), EXT);
+            SyncManager syncManager = new SyncManager.Builder()
+                    .setPartition(e)
+                    .setSyncJsonDir(dir)
+                    .setMoveAndRenamePattern(moveAndRenamePattern)
+                    .build();
+            dispatcherMap.put(e, syncManager);
+        });
+        return new HashDispatcher(BIT);
     }
 }

@@ -1,31 +1,28 @@
 package id.unimi.di.abd;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 public class HashDispatcher {
-
     private int bit;
-    private long partition;
 
-    public HashDispatcher(int bit, long partition) {
+    public HashDispatcher(int bit) {
         assert bit <= 64;
         this.bit = bit;
-        this.partition = partition;
     }
 
-    public static Stream<HashDispatcher> generate(int bit) {
-        return IntStream.range(0, (int) Math.pow(2,bit)).mapToObj(e -> new HashDispatcher(bit,e));
+    public static Stream<Long> generate(int bit) {
+        return LongStream.range(0, (int) Math.pow(2,bit)).boxed();
     }
 
-    public boolean isValid(byte[] hash) {
-        long shifted_hash = ByteBuffer.wrap(hash).getLong() >> (64 - this.bit);
-        return shifted_hash == getPartition();
+    public long getPartition(byte[] hash) {
+        int bits = (hash.length * 8) - this.bit;
+        BigInteger b = new BigInteger(1,hash).shiftRight(bits);
+        return b.longValue();
     }
 
-    public long getPartition(){
-        return partition;
-    }
 
 }

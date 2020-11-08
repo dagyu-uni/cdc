@@ -11,34 +11,36 @@ public class HashDispatcherTest {
 
     @ParameterizedTest
     @CsvSource({
-        "0,true",
-        "1,false",
-        "2,false",
-        "3,false",
-        "4,false"
+        "0,true,8",
+        "1,false,8",
+        "2,false,8",
+        "3,false,8",
+        "4,false,8",
+        "0,false,9",
+        "1,true,9",
+        "2,false,9",
+        "3,false,9",
+        "4,false,9"
     })
-    public void simpleTest(long partition, boolean expected){
-        int bit = 8;
-        HashDispatcher hashDispatcher = new HashDispatcher(bit,partition);
-        //00000000 10000000 00000000 00000000 00000000 00000000 00000000 00000000
+    public void simpleTest(long partition, boolean expected, int bit){
+        HashDispatcher hashDispatcher = new HashDispatcher(bit);
+        //00000000 11111111 00000000 00000000 00000000 00000000 00000000 00000000
         byte[] hash = {0, -1, 0, 0, 0, 0, 0, 0};
-        assertThat(hashDispatcher.isValid(hash)).isEqualTo(expected);
+        assertThat(hashDispatcher.getPartition(hash) == partition).isEqualTo(expected);
     }
 
     @ParameterizedTest
     @CsvSource({
-            "0,false",
-            "1,true",
-            "2,false",
-            "3,false",
-            "4,false"
+        "255,true,8",
+        "511,true,9",
+        "1023,true,10"
     })
-    public void moreComplexTest(long partition, boolean expected){
-        int bit = 9;
-        HashDispatcher hashDispatcher = new HashDispatcher(bit,partition);
-        //00000000 10000000 00000000 00000000 00000000 00000000 00000000 00000000
-        byte[] hash = {0, -1, 0, 0, 0, 0, 0, 0};
-        assertThat(hashDispatcher.isValid(hash)).isEqualTo(expected);
+    public void moreComplexTest2(long partition, boolean expected, int bit){
+        HashDispatcher hashDispatcher = new HashDispatcher(bit);
+        //11111111 11111111 00000000 00000000 00000000 00000000 00000000 00000000
+        byte[] hash = {-1, -1, 0, 0, 0, 0, 0, 0};
+        assertThat(hashDispatcher.getPartition(hash) == partition).isEqualTo(expected);
     }
+
 
 }
