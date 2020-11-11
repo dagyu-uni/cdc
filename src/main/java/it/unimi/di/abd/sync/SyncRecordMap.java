@@ -1,10 +1,10 @@
-package id.unimi.di.abd;
+package it.unimi.di.abd.sync;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import id.unimi.di.abd.model.SourceRecord;
-import id.unimi.di.abd.model.SyncRecord;
+import it.unimi.di.abd.model.SourceRecord;
+import it.unimi.di.abd.model.SyncRecord;
 
 import java.io.*;
 import java.util.*;
@@ -40,16 +40,9 @@ public class SyncRecordMap {
         this.dict = dict;
     }
 
-    public SQLop submit(SourceRecord item) {
-        SQLop sqLop = SQLop.NOP;
-        if(isInserted(item)) {
-            sqLop = SQLop.INSERT;
-        } else if(isUpdated(item)) {
-            sqLop = SQLop.UPDATE;
-        }
+    public boolean isChanged(SourceRecord item) {
         syncRecordList.add(item.toSyncRecord());
-        return sqLop;
-
+        return isInserted(item) || isUpdated(item);
     }
 
     private boolean isInserted(SourceRecord item) {
@@ -61,8 +54,7 @@ public class SyncRecordMap {
         return !v.equals(item.getHashStringed());
     }
 
-    public void finish(MoveAndRenamePattern moveAndRenamePattern) {
-        this.dict.forEach((k, v) -> moveAndRenamePattern.write(k,v, SQLop.DELETE));
+    public void finish() {
         try{
             Gson gson = new Gson();
             FileWriter fileWriter = new FileWriter(syncFile);

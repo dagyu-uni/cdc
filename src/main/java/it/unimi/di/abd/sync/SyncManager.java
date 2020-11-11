@@ -1,6 +1,7 @@
-package id.unimi.di.abd;
+package it.unimi.di.abd.sync;
 
-import id.unimi.di.abd.model.SourceRecord;
+import it.unimi.di.abd.model.SourceRecord;
+
 import java.io.*;
 
 public class SyncManager {
@@ -16,14 +17,16 @@ public class SyncManager {
     }
 
     public synchronized void submit(SourceRecord item) {
-        SQLop sqLop = syncRecords.submit(item);
-        moveAndRenamePattern.write(item, sqLop);
+        boolean isChanged = syncRecords.isChanged(item);
+        if(isChanged) {
+            moveAndRenamePattern.write(item);
+        }
     }
 
     public void finish() {
         try {
             moveAndRenamePattern.finish();
-            syncRecords.finish(moveAndRenamePattern);
+            syncRecords.finish();
         } catch (IOException e) {
             e.printStackTrace();
         }

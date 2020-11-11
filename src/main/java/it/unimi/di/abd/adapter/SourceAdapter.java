@@ -1,6 +1,6 @@
-package id.unimi.di.abd.adapter;
+package it.unimi.di.abd.adapter;
 
-import id.unimi.di.abd.model.SourceRecord;
+import it.unimi.di.abd.model.SourceRecord;
 
 import java.util.stream.Stream;
 

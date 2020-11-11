@@ -1,4 +1,4 @@
-package id.unimi.di.abd;
+package it.unimi.di.abd.sync;
 
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;

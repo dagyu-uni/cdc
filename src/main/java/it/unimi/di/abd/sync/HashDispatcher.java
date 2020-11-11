@@ -1,8 +1,6 @@
-package id.unimi.di.abd;
+package it.unimi.di.abd.sync;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 

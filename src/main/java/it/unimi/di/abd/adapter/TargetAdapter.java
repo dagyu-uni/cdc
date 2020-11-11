@@ -1,5 +1,4 @@
-package id.unimi.di.abd.adapter;
-
+package it.unimi.di.abd.adapter;
 
 import java.io.File;
 

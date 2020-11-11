@@ -1,10 +1,12 @@
-package id.unimi.di.abd;
+package it.unimi.di.abd;
 
-import id.unimi.di.abd.adapter.SourceAdapter;
-import id.unimi.di.abd.adapter.TargetAdapter;
+import it.unimi.di.abd.adapter.SourceAdapter;
+import it.unimi.di.abd.adapter.TargetAdapter;
+import it.unimi.di.abd.sync.HashDispatcher;
+import it.unimi.di.abd.sync.MoveAndRenamePattern;
+import it.unimi.di.abd.sync.SyncManager;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 
 public class CDC {
